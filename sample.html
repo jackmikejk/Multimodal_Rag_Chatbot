@@ -1,0 +1,182 @@
+//Contributed by Michael Jackson Maria Louis and Swathi Murali
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Q&A Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400&display=swap" rel="stylesheet">
+//Web Page Styling contributed by Michael Jackson Maria Louis
+    <style>
+        body {
+            position: relative;
+            background-color: #121212; /* Your desired background fallback color */
+            color: #fff;
+            font-family: 'Ubuntu', sans-serif;
+            margin: 0;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://th.bing.com/th/id/R.a0651c0f26869c1142ec9a90c1358ea1?rik=nagE4%2fs2675o6g&riu=http%3a%2f%2fmodelplusstudio.com%2fcdn%2fshop%2fproducts%2flightweight-tesla-model-3-wheels-forgestar-f14-gunmetal-rims-b_1200x1200.jpg%3fv%3d1615485093&ehk=spF3eJUBmFmd9y0Ps9wah88XasISwvWPvh7HYa5UwQg%3d&risl=&pid=ImgRaw&r=0'); 
+            background-size: cover;
+            background-repeat: no-repeat;
+            opacity: 0.2; /* Adjust the background image opacity */
+            z-index: -1; /* Ensures the background is behind content */
+        }
+        
+        body, html {
+            height: 100%;
+        }
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+        header {
+            background-color: #202124;
+            padding: 10px 0;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        .container {
+            position: absolute;
+            top: 40%; /* Adjusted for space below */
+            left: 50%;
+            transform: translate(-50%, -40%);
+            text-align: center;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 400;
+        }
+        .input-box {
+            background-color: #202124;
+            border: none;
+            border-radius: 24px;
+            padding: 24px;
+            width: 100%;
+            color: #fff;
+            height: 100px;
+            font-size: 16px;
+            resize: none;
+            display: block;
+            margin: 0 auto 20px auto;
+        }
+        .submit-btn {
+            background-color: #0d6efd;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 20px;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .submit-btn:hover {
+            background-color: #0b5ed7;
+        }
+        .response {
+            background-color: #333333;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+// Contributed by Michael Jackson Maria Louis. FrontEnd Development for Web Application User Interaction
+<body>
+    <header>
+        <h1 class="title">EV Q&A Hub</h1>
+    </header>
+    <div class="container">
+        <textarea id="questionInput" class="input-box" placeholder="Type your EV question..."></textarea>
+        <button id="submitBtn" class="submit-btn">Get Answer</button>
+        <div class="response" id="response"></div>
+        <div id="history"></div>
+    </div>
+// Contributed by Swathi Murali - Function to store the chat history and return the response back to the frontend
+    <script>
+    let conversationContext = ""; // Initialize an empty conversation context
+    let history = []; // Array to store the history of questions and answers
+
+    document.getElementById('submitBtn').addEventListener('click', function(event) {
+        event.preventDefault();
+        getAnswer();
+    });
+
+    function getAnswer() {
+        const questionInput = document.getElementById('questionInput');
+        const responseDiv = document.getElementById('response');
+        const historyDiv = document.getElementById('history'); // Ensure you have a div with this id in your HTML
+
+        // Update FormData to include the context
+        let formData = new FormData();
+        formData.append('question', questionInput.value);
+        formData.append('context', conversationContext); // Send the current context
+
+        fetch('/get_answer', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update the conversation context with the new context from the server
+            conversationContext = data.context;
+
+            // Append the current question and answer to the history array
+            history.push({question: questionInput.value, answer: data.result});
+
+            // Display the result and any relevant images
+            responseDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-sm-8">
+                        <p><b>Answer:</b> ${data.result}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        ${data.relevant_images ? `<img src="data:image/jpeg;base64,${data.relevant_images}" alt="" width="100%" height="auto">` : ''}
+                    </div>
+                </div>
+            `;
+            responseDiv.style.display = 'block';
+
+            // Also, update the history display
+            updateHistoryDisplay();
+        })
+        .catch((error) => {
+            responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            responseDiv.style.display = 'block';
+        });
+    }
+
+    function updateHistoryDisplay() {
+        const historyDiv = document.getElementById('history');
+        // Clear existing history
+        historyDiv.innerHTML = "";
+        // Rebuild history display
+        history.forEach((interaction, index) => {
+            historyDiv.innerHTML += `
+                <div class="interaction">
+                    <p><b>Question ${index + 1}:</b> ${interaction.question}</p>
+                    <p><b>Answer:</b> ${interaction.answer}</p>
+                </div>
+            `;
+        });
+    }
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
